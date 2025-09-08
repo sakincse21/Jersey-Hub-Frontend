@@ -17,9 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   useUpdatePasswordMutation,
   useUpdateProfileMutation,
-  useUserInfoQuery,
 } from "@/redux/features/User/user.api";
-import LoadingScreen from "@/components/layout/LoadingScreen";
 import { useEffect } from "react";
 
 const updateProfileSchema = z.object({
@@ -35,60 +33,72 @@ const updateProfileSchema = z.object({
     .max(100, { message: "Email cannot exceed 100 characters." })
     .toLowerCase()
     .optional(),
+  phoneNo: z
+    .string()
+    .regex(/^(?:01\d{9})$/, {
+      message: "Phone number must be valid. Format: 01XXXXXXXXX",
+    })
+    .optional()
+    .or(z.literal("")),
   address: z
     .string({ error: "Address must be string" })
     .max(200, { message: "Address cannot exceed 200 characters." })
     .optional(),
 });
 
-const updatePasswordSchema = z.object({
-  oldPassword: z
-    .string({ error: "Password must be string" })
-    .min(8, { message: "Password must be at least 8 characters long." })
-    .regex(/^(?=.*[A-Z])/, {
-      message: "Password must contain at least 1 uppercase letter.",
-    })
-    .regex(/^(?=.*[!@#$%^&*])/, {
-      message: "Password must contain at least 1 special character.",
-    })
-    .regex(/^(?=.*\d)/, {
-      message: "Password must contain at least 1 number.",
-    }),
-  newPassword: z
-    .string({ error: "Password must be string" })
-    .min(8, { message: "Password must be at least 8 characters long." })
-    .regex(/^(?=.*[A-Z])/, {
-      message: "Password must contain at least 1 uppercase letter.",
-    })
-    .regex(/^(?=.*[!@#$%^&*])/, {
-      message: "Password must contain at least 1 special character.",
-    })
-    .regex(/^(?=.*\d)/, {
-      message: "Password must contain at least 1 number.",
-    }),
-  newPasswordAgain: z
-    .string({ error: "Password must be string" })
-    .min(8, { message: "Password must be at least 8 characters long." })
-    .regex(/^(?=.*[A-Z])/, {
-      message: "Password must contain at least 1 uppercase letter.",
-    })
-    .regex(/^(?=.*[!@#$%^&*])/, {
-      message: "Password must contain at least 1 special character.",
-    })
-    .regex(/^(?=.*\d)/, {
-      message: "Password must contain at least 1 number.",
-    }),
-}).refine((data) => data.newPassword === data.newPasswordAgain, {
-  message: "Passwords do not match",
-  path: ["newPasswordAgain"]
-})
+const updatePasswordSchema = z
+  .object({
+    oldPassword: z
+      .string({ error: "Password must be string" })
+      .min(8, { message: "Password must be at least 8 characters long." })
+      .regex(/^(?=.*[A-Z])/, {
+        message: "Password must contain at least 1 uppercase letter.",
+      })
+      .regex(/^(?=.*[!@#$%^&*])/, {
+        message: "Password must contain at least 1 special character.",
+      })
+      .regex(/^(?=.*\d)/, {
+        message: "Password must contain at least 1 number.",
+      }),
+    newPassword: z
+      .string({ error: "Password must be string" })
+      .min(8, { message: "Password must be at least 8 characters long." })
+      .regex(/^(?=.*[A-Z])/, {
+        message: "Password must contain at least 1 uppercase letter.",
+      })
+      .regex(/^(?=.*[!@#$%^&*])/, {
+        message: "Password must contain at least 1 special character.",
+      })
+      .regex(/^(?=.*\d)/, {
+        message: "Password must contain at least 1 number.",
+      }),
+    newPasswordAgain: z
+      .string({ error: "Password must be string" })
+      .min(8, { message: "Password must be at least 8 characters long." })
+      .regex(/^(?=.*[A-Z])/, {
+        message: "Password must contain at least 1 uppercase letter.",
+      })
+      .regex(/^(?=.*[!@#$%^&*])/, {
+        message: "Password must contain at least 1 special character.",
+      })
+      .regex(/^(?=.*\d)/, {
+        message: "Password must contain at least 1 number.",
+      }),
+  })
+  .refine((data) => data.newPassword === data.newPasswordAgain, {
+    message: "Passwords do not match",
+    path: ["newPasswordAgain"],
+  });
 
-export function UpdateProfile() {
-  const { data: userData, isLoading: isUserLoading, refetch } =
-    useUserInfoQuery(undefined);
+// Define props for the component
+interface UpdateProfileProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  userData: any; // Consider creating a specific type for user data
+  refetch: () => void;
+}
 
+export function UpdateProfile({ userData, refetch }: UpdateProfileProps) {
   const [updateProfile] = useUpdateProfileMutation();
-
   const [updatePassword] = useUpdatePasswordMutation();
 
   const formUpdateProfile = useForm<z.infer<typeof updateProfileSchema>>({
@@ -96,6 +106,7 @@ export function UpdateProfile() {
     defaultValues: {
       name: "",
       email: "",
+      phoneNo: "",
       address: "",
     },
   });
@@ -114,13 +125,11 @@ export function UpdateProfile() {
       formUpdateProfile.reset({
         name: userData.data.name || "",
         email: userData.data.email || "",
+        phoneNo: userData.data.phoneNo || "",
         address: userData.data.address || "",
       });
     }
   }, [userData, formUpdateProfile]);
-  if (isUserLoading) {
-    return <LoadingScreen />;
-  }
 
   //submit action for profile update
   async function onSubmitUpdateProfile(
@@ -215,6 +224,19 @@ export function UpdateProfile() {
               />
               <FormField
                 control={formUpdateProfile.control}
+                name="phoneNo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="gap-1">Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="01XXXXXXXXX" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={formUpdateProfile.control}
                 name="address"
                 render={({ field }) => (
                   <FormItem>
@@ -230,9 +252,9 @@ export function UpdateProfile() {
                 )}
               />
               <div className="w-full flex flex-row justify-end">
-              <Button type="submit" className="">
-                Update Profile
-              </Button>
+                <Button type="submit" className="">
+                  Update Profile
+                </Button>
               </div>
             </form>
           </Form>
@@ -254,7 +276,10 @@ export function UpdateProfile() {
                 name="oldPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="gap-1">Old Password<span className="text-red-500">*</span></FormLabel>
+                    <FormLabel className="gap-1">
+                      Old Password
+                      <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="********"
@@ -271,7 +296,10 @@ export function UpdateProfile() {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="gap-1">New Password<span className="text-red-500">*</span></FormLabel>
+                    <FormLabel className="gap-1">
+                      New Password
+                      <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="********"
@@ -288,7 +316,10 @@ export function UpdateProfile() {
                 name="newPasswordAgain"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Verify Password<span className="text-red-500">*</span></FormLabel>
+                    <FormLabel>
+                      Verify Password
+                      <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="********"
@@ -301,9 +332,9 @@ export function UpdateProfile() {
                 )}
               />
               <div className="w-full flex flex-row justify-end">
-              <Button type="submit" className="">
-                Update Password
-              </Button>
+                <Button type="submit" className="">
+                  Update Password
+                </Button>
               </div>
             </form>
           </Form>

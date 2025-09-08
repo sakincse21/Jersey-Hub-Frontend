@@ -99,15 +99,9 @@ const Checkout = () => {
     try {
       const res = await createOrder(orderData).unwrap();
       if (res.success) {
-        if (paymentMethod === "BKASH" && res.data.url) {
-          toast.success("Redirecting to payment...", { id: toastId });
-          dispatch(clearCart());
-          window.location.href = res.data.url;
-        } else {
-          toast.success("Order placed successfully!", { id: toastId });
-          dispatch(clearCart());
-          navigate("/profile");
-        }
+        toast.success("Order placed successfully!", { id: toastId });
+        dispatch(clearCart());
+        navigate("/order-confirmed");
       } else {
         toast.error(res.message || "Failed to place order.", { id: toastId });
       }
@@ -120,7 +114,7 @@ const Checkout = () => {
   };
 
   if (cartItems.length === 0 && !isOrderCreating) {
-    navigate("/collections");
+    navigate("/order-confirmed");
     return null;
   }
 
@@ -246,7 +240,10 @@ const Checkout = () => {
                   name="bkashTransactionId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Transaction ID (Send Money to <strong>01833410082</strong>)</FormLabel>
+                      <FormLabel>
+                        Transaction ID (Send Money to{" "}
+                        <strong>01833410082</strong>)
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} disabled={isUserLoading} />
                       </FormControl>
