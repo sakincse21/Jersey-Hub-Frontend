@@ -55,13 +55,8 @@ export function LoginForm() {
       if (res?.success) {
         toast.success("Login successful.", { id: toastId });
 
-        console.log(res);
+        navigate('/profile')
 
-        if (res?.data?.role === "ADMIN") {
-          navigate(`/admin`);
-        }else{
-          navigate('/profile')
-        }
       } else {
         toast.error(res?.data?.message, { id: toastId });
       }
