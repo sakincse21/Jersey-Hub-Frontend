@@ -1,3 +1,8 @@
+import epl from '@/assets/logo/epl.png'
+import bundesliga from '@/assets/logo/bundesliga.png'
+import laliga from '@/assets/logo/laliga.png'
+import seriea from '@/assets/logo/seriea.png'
+
 export interface ITeam {
   league: string;
   logo: string;
@@ -7,7 +12,7 @@ export interface ITeam {
 export const teams: ITeam[] = [
   {
     league: "Premier League",
-    logo: "/src/assets/logo/epl.png",
+    logo: epl,
     teams: [
       "Manchester United",
       "Manchester City",
@@ -18,7 +23,7 @@ export const teams: ITeam[] = [
   },
   {
     league: "La Liga",
-    logo: "/src/assets/logo/laliga.png",
+    logo: laliga,
 
     teams: [
       "Real Madrid",
@@ -30,13 +35,13 @@ export const teams: ITeam[] = [
   },
   {
     league: "Serie A",
-    logo: "/src/assets/logo/seriea.png",
+    logo: seriea,
 
     teams: ["Juventus", "AC Milan", "Inter Milan", "AS Roma", "Napoli"],
   },
   {
     league: "Bundesliga",
-    logo: "/src/assets/logo/bundesliga.png",
+    logo: bundesliga,
 
     teams: [
       "Bayern Munich",
