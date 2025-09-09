@@ -21,6 +21,8 @@ import {
 import { Link, useNavigate } from "react-router";
 import { useLoginMutation } from "@/redux/features/Auth/auth.api";
 import { toast } from "sonner";
+import { useUserInfoQuery } from "@/redux/features/User/user.api";
+import { useEffect } from "react";
 // import { useAppDispatch } from "@/redux/hook";
 
 const loginSchema = z.object({
@@ -32,6 +34,8 @@ const loginSchema = z.object({
 
 export function LoginForm() {
   const [login] = useLoginMutation();
+  const { data } = useUserInfoQuery(undefined);
+
   const navigate = useNavigate();
   // const dispatch = useAppDispatch();
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -41,6 +45,11 @@ export function LoginForm() {
       password: "",
     },
   });
+  useEffect(() => {
+    if (data?.data?.email) {
+      navigate("/profile");
+    }
+  }, [data, navigate]);
   async function onSubmit(formData: z.infer<typeof loginSchema>) {
     // console.log(formData);
     // const loginInfo:ILogin = {
@@ -55,9 +64,7 @@ export function LoginForm() {
       if (res?.success) {
         toast.success("Login successful.", { id: toastId });
 
-        navigate('/collections')
-        
-
+        navigate("/profile");
       } else {
         toast.error(res?.data?.message, { id: toastId });
       }

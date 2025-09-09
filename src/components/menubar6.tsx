@@ -11,8 +11,7 @@ import { Button } from "./ui/button";
 import { authApi, useLogoutMutation } from "@/redux/features/Auth/auth.api";
 import { useAppDispatch } from "@/redux/hook";
 
-export default function DisabledMenu({ role }: { role: string }) {
-  console.log(role);
+export default function DisabledMenu({setLoggedIn}:{setLoggedIn:React.Dispatch<React.SetStateAction<boolean>>}) {
 
   const navigate = useNavigate();
   const [logout] = useLogoutMutation();
@@ -22,6 +21,7 @@ export default function DisabledMenu({ role }: { role: string }) {
     dispatch(authApi.util.resetApiState());
     navigate("/", { replace: true });
     dispatch(authApi.util.resetApiState());
+    setLoggedIn(false);
   };
   return (
     <Menubar className=" border-0">

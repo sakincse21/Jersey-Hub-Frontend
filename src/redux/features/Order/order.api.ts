@@ -42,7 +42,7 @@ const orderApi = baseApi.injectEndpoints({
         method: 'POST',
         body: orderData,
       }),
-      invalidatesTags: ['PRODUCT'], // Invalidate products to update stock
+      invalidatesTags: ['PRODUCT','ORDERS','USER'], // Invalidate products to update stock
   }),
     updateOrder: builder.mutation({
       query: (orderData) => ({
@@ -50,7 +50,7 @@ const orderApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body: orderData.body,
       }),
-      invalidatesTags: ['ORDERS'], // Invalidate products to update stock
+      invalidatesTags: ['ORDERS','USERS'], // Invalidate products to update stock
   }),
   }),
 });

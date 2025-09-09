@@ -18,13 +18,14 @@ import DisabledMenu from "../menubar6";
 import { useAppSelector } from "@/redux/hook";
 import { selectTotalCartItems } from "@/redux/features/Cart/cart.slice";
 import { Input } from "../ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Navbar() {
+  const [loggedIn, setLoggedIn] = useState(false);
   const { data } = useUserInfoQuery(undefined);
   const totalCartItems = useAppSelector(selectTotalCartItems);
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm]=useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const navigationLinks = [
     { href: "/", label: "Home" },
     { href: "/collections", label: "Collections" },
@@ -33,6 +34,12 @@ export default function Navbar() {
     { href: "/about", label: "About" },
     { href: "/contact-us", label: "Contact Us" },
   ];
+
+  useEffect(() => {
+    if (data?.data?.email) {
+      setLoggedIn(true);
+    }
+  }, [data, navigate]);
 
   return (
     <header className="px-4 md:px-6 sticky top-0 bg-background backdrop-blur-3xl py-2 w-full z-50">
@@ -116,8 +123,19 @@ export default function Navbar() {
         {/* Right side */}
         <div className="flex items-center gap-4">
           <span className="flex flex-row gap-2 justify-end items-center">
-            <Input placeholder="Search Here" onChange={(e)=>{e.preventDefault();setSearchTerm(e.target.value)}} />
-            <SearchIcon onClick={(e)=>{e.preventDefault();navigate(`/collections?searchTerm=${searchTerm}`)}} />
+            <Input
+              placeholder="Search Here"
+              onChange={(e) => {
+                e.preventDefault();
+                setSearchTerm(e.target.value);
+              }}
+            />
+            <SearchIcon
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(`/collections?searchTerm=${searchTerm}`);
+              }}
+            />
           </span>
           <Link to={"/cart"} className="relative p-2">
             <ShoppingBasketIcon className="h-6 w-6" />
@@ -127,8 +145,8 @@ export default function Navbar() {
               </span>
             )}
           </Link>
-          {data?.data?.email ? (
-            <DisabledMenu role={data?.data?.role} />
+          {loggedIn ? (
+            <DisabledMenu setLoggedIn={setLoggedIn} />
           ) : (
             <Link to={"/login"}>
               <Button variant="ghost" size="sm" className="text-sm">
