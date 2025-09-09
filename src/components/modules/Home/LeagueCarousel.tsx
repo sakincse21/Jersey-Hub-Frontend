@@ -26,7 +26,7 @@ const LeagueCarousel = () => {
                     <img
                       src={team.logo}
                       alt={team.league}
-                      className="h-16 object-contain"
+                      className="h-16 object-contain roundemd"
                     />
                     <span className="mt-3 font-semibold text-center text-sm">
                       {team.league}

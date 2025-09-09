@@ -57,14 +57,10 @@ export interface IUser {
   email: string;
   phoneNo: string;
   address: string;
-  password: string;
-  nidNo: string;
-  isVerified: boolean;
   role: string;
   status: string;
   createdAt: string;
   updatedAt: string;
-  walletId: string;
 }
 
 const filterSchema = z.object({
@@ -82,7 +78,6 @@ const filterSchema = z.object({
     .or(z.literal("")),
   sortBy: z.string().optional(),
   limit: z.string().optional(),
-  isVerified: z.string().optional(),
 });
 
 export interface IFilters {
@@ -93,7 +88,6 @@ export interface IFilters {
   limit?: string;
   page?: string;
   sortBy?: string;
-  isVerified?: string;
 }
 
 const sortByOptions: string[] = ["name", "phoneNo", "nidNo", "email"];
@@ -102,7 +96,7 @@ export default function AllUsers({ role }: { role: string }) {
   const [openDialog, setOpenDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const defaultFilter = {
-    role,
+    role:IRole.USER,
     sortBy: "name",
     sort: "asc",
   };
@@ -117,11 +111,9 @@ export default function AllUsers({ role }: { role: string }) {
     defaultValues: {
       searchTerm: "",
       status: "",
-      role,
       sort: "asc",
       limit: "10",
       sortBy: "name",
-      isVerified: "",
     },
   });
 
@@ -145,11 +137,9 @@ export default function AllUsers({ role }: { role: string }) {
   }, [currentPage]);
 
   const handleFilterClear = () => {
-    form.resetField('isVerified');
     form.resetField('role');
     form.resetField('searchTerm');
     setFilters({
-      role,
       sort: "asc",
       limit: "10",
       sortBy: "name",
@@ -171,7 +161,7 @@ export default function AllUsers({ role }: { role: string }) {
     <div className="w-full flex flex-col justify-center items-center md:w-5xl">
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>All {role}</CardTitle>
+          <CardTitle>All Users</CardTitle>
         </CardHeader>
         <CardContent className="text-center">
           <div className="flex-1 overflow-hidden">
@@ -189,7 +179,7 @@ export default function AllUsers({ role }: { role: string }) {
                 {/* {openDialog && ( */}
                 <DialogContent className="flex flex-col">
                   <DialogHeader>
-                    <DialogTitle>Filter {role}</DialogTitle>
+                    <DialogTitle>Filter Users</DialogTitle>
                     <DialogDescription>
                       Apply filters to narrow down your results.
                     </DialogDescription>
@@ -206,7 +196,7 @@ export default function AllUsers({ role }: { role: string }) {
                           <FormItem>
                             <FormLabel>Search</FormLabel>
                             <FormControl>
-                              <Input placeholder="Name, Email, Phone, Nid No" {...field} />
+                              <Input placeholder="Name, Email, Phone, Address" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -253,7 +243,6 @@ export default function AllUsers({ role }: { role: string }) {
                               <Select
                                 onValueChange={field.onChange}
                                 defaultValue={field.value as string}
-                                disabled
                               >
                                 <FormControl>
                                   <SelectTrigger className="w-full">
@@ -301,30 +290,6 @@ export default function AllUsers({ role }: { role: string }) {
                                       </SelectItem>
                                     )
                                   )}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="isVerified"
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel>Verified</FormLabel>
-                              <Select
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Verified" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value={"true"}>Yes</SelectItem>
-                                  <SelectItem value={"false"}>No</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -414,8 +379,8 @@ export default function AllUsers({ role }: { role: string }) {
                       <TableHead>Email</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Verified</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead>Address</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody className="overflow-y-auto">
@@ -428,9 +393,9 @@ export default function AllUsers({ role }: { role: string }) {
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{user.phoneNo}</TableCell>
                         <TableCell>{user.status}</TableCell>
-                        <TableCell>{user.isVerified ? "YES" : "NO"}</TableCell>
+                        <TableCell>{user.address}</TableCell>
                         <TableCell className="text-right">
-                          <UserActionDialog userId={user._id} role={IRole.USER} />
+                          <UserActionDialog userId={user._id} />
                         </TableCell>
                       </TableRow>
                     ))}

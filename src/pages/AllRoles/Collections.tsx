@@ -9,12 +9,44 @@ import { IOrderSort } from "@/interfaces";
 import { teams } from "@/constants/teams";
 
 import LoadingScreen from "@/components/layout/LoadingScreen";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Interfaces and Schemas from AllProducts.tsx
 export interface IVariant {
@@ -39,7 +71,10 @@ const filterSchema = z.object({
   searchTerm: z.string().optional().or(z.literal("")),
   team: z.string().optional().or(z.literal("")),
   league: z.string().optional().or(z.literal("")),
-  sort: z.enum([...Object.values(IOrderSort)] as [string, ...string[]]).optional().or(z.literal("")),
+  sort: z
+    .enum([...Object.values(IOrderSort)] as [string, ...string[]])
+    .optional()
+    .or(z.literal("")),
   sortBy: z.string().optional(),
   limit: z.string().optional(),
   isFeatured: z.string().optional(),
@@ -61,7 +96,7 @@ const limitOptions: string[] = ["9", "12", "18", "24"];
 
 const Collections = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   const queryParams = Object.fromEntries(searchParams.entries());
   const currentPage = parseInt(queryParams.page || "1", 10);
   const defaultFilter = { sortBy: "name", sort: "asc", limit: "9" };
@@ -69,7 +104,10 @@ const Collections = () => {
 
   const { data, isLoading } = useGetAllProductsQuery(filters);
 
-  const [selectedLeague, setSelectedLeague] = useState<string>(filters.league || "");
+  const [selectedLeague, setSelectedLeague] = useState<string>(
+    filters.league || ""
+  );
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 
   const form = useForm<z.infer<typeof filterSchema>>({
     resolver: zodResolver(filterSchema),
@@ -132,15 +170,18 @@ const Collections = () => {
   return (
     <div className="container mx-auto p-4 lg:p-8">
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left Section: Filters */}
-        <aside className="w-full lg:w-1/4">
+        {/* Sidebar Filters: Only on md and up */}
+        <aside className="hidden lg:block w-full lg:w-1/4">
           <Card>
             <CardHeader>
               <CardTitle>Filters</CardTitle>
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
                   <FormField
                     control={form.control}
                     name="searchTerm"
@@ -168,10 +209,16 @@ const Collections = () => {
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Select league" /></SelectTrigger>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select league" />
+                            </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {leagues.map((league) => <SelectItem key={league} value={league}>{league}</SelectItem>)}
+                            {leagues.map((league) => (
+                              <SelectItem key={league} value={league}>
+                                {league}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </FormItem>
@@ -183,14 +230,22 @@ const Collections = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Team</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!selectedLeague}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={!selectedLeague}
+                        >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={selectedLeague ? "Select team" : "Select league first"} />
+                              <SelectValue placeholder="Select team" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {getTeamsForLeague(selectedLeague).map((team) => <SelectItem key={team} value={team}>{team}</SelectItem>)}
+                            {getTeamsForLeague(selectedLeague).map((team) => (
+                              <SelectItem key={team} value={team}>
+                                {team}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </FormItem>
@@ -202,12 +257,21 @@ const Collections = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Sort By</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
                           <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Sort By" /></SelectTrigger>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sort By" />
+                            </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {sortByOptions.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                            {sortByOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </FormItem>
@@ -219,12 +283,21 @@ const Collections = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Order</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
                           <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Sort order" /></SelectTrigger>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sort order" />
+                            </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.values(IOrderSort).map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                            {Object.values(IOrderSort).map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </FormItem>
@@ -236,12 +309,21 @@ const Collections = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Show</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
                           <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Products per page" /></SelectTrigger>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Products per page" />
+                            </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {limitOptions.map((opt) => <SelectItem key={opt} value={opt}>{opt} per page</SelectItem>)}
+                            {limitOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt} per page
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </FormItem>
@@ -249,13 +331,208 @@ const Collections = () => {
                   />
                   <div className="flex flex-col space-y-2 pt-4">
                     <Button type="submit">Apply Filters</Button>
-                    <Button type="button" variant="ghost" onClick={handleFilterClear}>Clear Filters</Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={handleFilterClear}
+                    >
+                      Clear Filters
+                    </Button>
                   </div>
                 </form>
               </Form>
             </CardContent>
           </Card>
         </aside>
+
+        {/* Mobile Filters Button & Dialog */}
+        <div className="block lg:hidden my-2">
+          <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
+            <DialogTrigger asChild>
+              <div className="w-full flex justify-end items-center">
+                <Button variant="outline" className="w-fit">
+                  Filters
+                </Button>
+              </div>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Filters</DialogTitle>
+              </DialogHeader>
+              <CardContent>
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-6"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="searchTerm"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Search</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Product name..." {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="league"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>League</FormLabel>
+                          <Select
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              setSelectedLeague(value);
+                              form.setValue("team", "");
+                            }}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select league" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {leagues.map((league) => (
+                                <SelectItem key={league} value={league}>
+                                  {league}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="team"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Team</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            disabled={!selectedLeague}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select team" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {getTeamsForLeague(selectedLeague).map((team) => (
+                                <SelectItem key={team} value={team}>
+                                  {team}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="sortBy"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Sort By</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sort By" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {sortByOptions.map((opt) => (
+                                <SelectItem key={opt} value={opt}>
+                                  {opt}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="sort"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Order</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sort order" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.values(IOrderSort).map((opt) => (
+                                <SelectItem key={opt} value={opt}>
+                                  {opt}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="limit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Show</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Products per page" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {limitOptions.map((opt) => (
+                                <SelectItem key={opt} value={opt}>
+                                  {opt} per page
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex flex-col space-y-2 pt-4">
+                      <Button
+                        type="submit"
+                        onClick={() => setFilterDialogOpen(false)}
+                      >
+                        Apply Filters
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={handleFilterClear}
+                      >
+                        Clear Filters
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </DialogContent>
+          </Dialog>
+        </div>
 
         {/* Right Section: Products and Pagination */}
         <main className="w-full lg:w-3/4">
@@ -267,12 +544,20 @@ const Collections = () => {
                 {products.map((product) => (
                   <Card key={product._id} className="flex flex-col">
                     <CardHeader className="p-0">
-                      <img src={product.images[0]} alt={product.name} className="w-full h-64 object-cover rounded-t-lg p-3" />
+                      <img
+                        src={product.images[0]}
+                        alt={product.name}
+                        className="w-full h-64 object-cover rounded-t-lg p-3"
+                      />
                     </CardHeader>
                     <CardContent className="pt-4 flex-grow">
                       <h3 className="text-lg font-bold">{product.name}</h3>
-                      <p className="text-sm text-muted-foreground">{product.team}</p>
-                      <p className="text-lg font-semibold mt-2">${product.price}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {product.team}
+                      </p>
+                      <p className="text-lg font-semibold mt-2">
+                        ${product.price}
+                      </p>
                     </CardContent>
                     <CardFooter>
                       <Link to={`/product/${product.slug}`} className="w-full">
@@ -287,15 +572,41 @@ const Collections = () => {
                   <Pagination>
                     <PaginationContent>
                       <PaginationItem>
-                        <PaginationPrevious onClick={() => handlePageChange(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                        <PaginationPrevious
+                          onClick={() =>
+                            handlePageChange(Math.max(1, currentPage - 1))
+                          }
+                          className={
+                            currentPage === 1
+                              ? "pointer-events-none opacity-50"
+                              : "cursor-pointer"
+                          }
+                        />
                       </PaginationItem>
                       {[...Array(totalPage).keys()].map((page) => (
-                        <PaginationItem key={page + 1} onClick={() => handlePageChange(page + 1)} className="cursor-pointer">
-                          <PaginationLink isActive={currentPage === page + 1}>{page + 1}</PaginationLink>
+                        <PaginationItem
+                          key={page + 1}
+                          onClick={() => handlePageChange(page + 1)}
+                          className="cursor-pointer"
+                        >
+                          <PaginationLink isActive={currentPage === page + 1}>
+                            {page + 1}
+                          </PaginationLink>
                         </PaginationItem>
                       ))}
                       <PaginationItem>
-                        <PaginationNext onClick={() => handlePageChange(Math.min(totalPage, currentPage + 1))} className={currentPage === totalPage ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                        <PaginationNext
+                          onClick={() =>
+                            handlePageChange(
+                              Math.min(totalPage, currentPage + 1)
+                            )
+                          }
+                          className={
+                            currentPage === totalPage
+                              ? "pointer-events-none opacity-50"
+                              : "cursor-pointer"
+                          }
+                        />
                       </PaginationItem>
                     </PaginationContent>
                   </Pagination>
@@ -304,7 +615,9 @@ const Collections = () => {
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className="text-xl text-muted-foreground">No products found.</p>
+              <p className="text-xl text-muted-foreground">
+                No products found.
+              </p>
             </div>
           )}
         </main>

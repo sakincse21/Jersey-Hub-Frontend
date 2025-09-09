@@ -15,6 +15,7 @@ export const userApi = baseApi.injectEndpoints({
         method: "PATCH",
         body: payload.body,
       }),
+        invalidatesTags: ["SINGLEUSER","USERS","ADMIN_SUMMARY"],
     }),
     updatePassword: builder.mutation({
       query: (body) => ({
@@ -23,14 +24,13 @@ export const userApi = baseApi.injectEndpoints({
         body,
       }),
     }),
-    updateUser: builder.mutation({
-      query: (payload) => ({
-        url: `/user/admin/${payload.userId}`,
-        method: "PATCH",
-        body:payload,
-      }),
-      invalidatesTags: ["SINGLEUSER","USERS","ADMIN_SUMMARY"],
-    }),
+    // updateUser: builder.mutation({
+    //   query: (payload) => ({
+    //     url: `/user/${payload.userId}`,
+    //     method: "PATCH",
+    //     body:payload,
+    //   }),
+    // }),
     userInfo: builder.query({
       query: () => ({
         url: "/user/me",
@@ -66,7 +66,7 @@ export const {
   useUpdatePasswordMutation,
   useUpdateProfileMutation,
   useGetAllUsersQuery,
-  useUpdateUserMutation,
+  // useUpdateUserMutation,
   useGetSingleUserQuery,
   useLazyGetSingleUserQuery
 } = userApi;

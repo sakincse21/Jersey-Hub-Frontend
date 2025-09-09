@@ -23,7 +23,7 @@ export const authApi = baseApi.injectEndpoints({
         method: "POST",
         // body: userInfo,
       }),
-      invalidatesTags: ["USER", "ORDERS", 'ADMIN_SUMMARY', 'SINGLEUSER', 'USERS', 'SUMMARY']
+      invalidatesTags: ["USER", "ORDERS", 'ADMIN_SUMMARY', 'SINGLEUSER', 'USERS', 'SUMMARY', 'USERS',]
     }),
   }),
 });

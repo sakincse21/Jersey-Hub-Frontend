@@ -11,13 +11,20 @@ const orderApi = baseApi.injectEndpoints({
       }),
       providesTags: ["ORDERS"]
   }),
+    singleOrder: builder.query({
+      query: (orderId) => ({
+        url: `/order/${orderId}`,
+        method: "GET",
+      }),
+      providesTags: ["ORDERS"]
+  }),
     summary: builder.query({
       query: () => ({
         url: "/order/summary",
         method: "GET",
         // body: userInfo,
       }),
-      providesTags: ["SUMMARY"]
+      providesTags: ["SUMMARY", 'ADMIN_SUMMARY']
   }),
     cancel: builder.mutation({
       query: (orderId) => ({
@@ -37,6 +44,14 @@ const orderApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['PRODUCT'], // Invalidate products to update stock
   }),
+    updateOrder: builder.mutation({
+      query: (orderData) => ({
+        url: `/order/${orderData.orderId}`,
+        method: 'PATCH',
+        body: orderData.body,
+      }),
+      invalidatesTags: ['ORDERS'], // Invalidate products to update stock
+  }),
   }),
 });
 
@@ -47,4 +62,6 @@ export const {
   useSummaryQuery,
   useCancelMutation,
   useCreateOrderMutation,
+  useUpdateOrderMutation,
+  useSingleOrderQuery
 } = orderApi;

@@ -1,288 +1,241 @@
-import LoadingScreen from "@/components/layout/LoadingScreen";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+
+import {
+  useGetSingleUserQuery,
+  useUpdateProfileMutation,
+} from "@/redux/features/User/user.api";
+import { IRole, IStatus } from "@/interfaces";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
+  Form,
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
-  Form,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { IRole, IStatus } from "@/interfaces";
-import {
-  useLazyGetSingleUserQuery,
-  useUpdateUserMutation,
-} from "@/redux/features/User/user.api";
-import type { TRole } from "@/types/user";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import z from "zod";
+import LoadingScreen from "@/components/layout/LoadingScreen";
 
-const updateSchema = z.object({
-  role: z.enum([...Object.values(IRole)] as [string, ...string[]]).optional(),
-  status: z
-    .enum([...Object.values(IStatus)] as [string, ...string[]])
-    .optional(),
-  isVerified: z.boolean().optional(),
+// Schema for updating user info by an admin
+const updateUserSchema = z.object({
+  name: z.string().min(2).max(50).optional(),
+  email: z.email().optional(),
   phoneNo: z
     .string()
-    .regex(/^(?:01\d{9})$/, {
-      message: "Phone number must be valid for Bangladesh. Format: 01XXXXXXXXX",
-    })
-    .optional(),
-  nidNo: z
-    .union([
-      z.string().length(13, {
-        message: "NID length must be 13 or 17 characters long.",
-      }),
-      z.string().length(17, {
-        message: "NID length must be 13 or 17 characters long.",
-      }),
-    ])
-    .optional(),
+    .regex(/^(?:\+8801\d{9}|01\d{9})$/)
+    .optional()
+    .or(z.literal("")),
+  address: z.string().max(200).optional(),
+  role: z.enum([...Object.values(IRole)] as [string, ...string[]]).optional(),
+  status: z.enum([...Object.values(IStatus)] as [string, ...string[]]).optional(),
 });
 
-export interface IUpdates {
-  role: string;
-  status: string;
-  isVerified: boolean;
-  phoneNo: string;
-  nidNo: string;
+interface UserActionDialogProps {
+  userId: string;
 }
 
-const UserActionDialog = ({ userId, role }: { userId: string, role?: string }) => {
-  const [openDialog, setOpenDialog] = useState(false);
-  //   const [filters, setFilters] = useState<IFilters | null>(null);
-  const [updateUser] = useUpdateUserMutation();
-  const [getSingleUser, { data, isLoading }] = useLazyGetSingleUserQuery();
-  const userData = data?.data;
+const UserActionDialog = ({ userId }: UserActionDialogProps) => {
+  const [open, setOpen] = useState(false);
+  const { data: userData, isLoading: isUserLoading, isSuccess } = useGetSingleUserQuery(userId, {
+    skip: !open, // Only fetch when the dialog is open
+  });
+  const [updateUser, { isLoading: isUpdating }] = useUpdateProfileMutation();
 
-  // console.log(userData, "user single data");
-
-  const form = useForm<z.infer<typeof updateSchema>>({
-    resolver: zodResolver(updateSchema),
-    defaultValues: {
-      role: userData?.role || "",
-      isVerified: userData?.isVerified || "",
-      status: userData?.status || "",
-      phoneNo: userData?.phoneNo || "",
-      nidNo: userData?.nidNo || "",
-    },
+  const form = useForm<z.infer<typeof updateUserSchema>>({
+    resolver: zodResolver(updateUserSchema),
   });
 
   useEffect(() => {
-    if (openDialog && userId) {
-      getSingleUser(userId);
-    }
-  }, [openDialog, userId, getSingleUser]);
-
-  useEffect(() => {
-    if (userData) {
+    if (isSuccess && userData?.data) {
+      const user = userData.data;
       form.reset({
-        role: userData?.role || "",
-        isVerified: userData?.isVerified,
-        status: userData?.status || "",
-        phoneNo: userData?.phoneNo || "",
-        nidNo: userData?.nidNo || "",
+        name: user.name || "",
+        email: user.email || "",
+        phoneNo: user.phoneNo || "",
+        address: user.address || "",
+        role: user.role || "",
+        status: user.status || "",
       });
     }
-  }, [userData, form]);
+  }, [userData, isSuccess, form]);
 
-  if (isLoading) {
-    return (
-      <span className="py-2 px-4 rounded-lg bg-primary text-white">
-        Loading...
-      </span>
+  
+  const onSubmit = async (values: z.infer<typeof updateUserSchema>) => {
+    const toastId = toast.loading("Updating user...");
+
+    // Filter out empty strings so they don't overwrite existing data with nulls
+    const payload = Object.fromEntries(
+      Object.entries(values).filter(([, value]) => value !== "")
     );
-  }
 
-  const roleArray:TRole[] = [IRole.ADMIN,IRole.USER];
-
-  async function onSubmit(values: z.infer<typeof updateSchema>) {
-    const toastId = toast.loading("Updating user.");
     try {
-      const payload = {
-        ...values,
-        userId,
-      };
-      const res = await updateUser(payload).unwrap();
-      if (res?.success) {
-        toast.success("User updated successfully.", { id: toastId });
-      } else {
-        toast.error(res?.data?.message, { id: toastId });
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error(error);
-      const errorMessage =
-        error?.data?.message || "Something went wrong. Try again.";
-      toast.error(errorMessage, { id: toastId });
+      await updateUser({ userId: userId, body: payload }).unwrap();
+      toast.success("User updated successfully", { id: toastId });
+      setOpen(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      toast.error("Failed to update user", { id: toastId });
     }
-    setOpenDialog(false);
-  }
+  };
 
   return (
-    <div className="w-full flex justify-end items-center my-3">
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogTrigger asChild>
-          <span className="py-2 px-4 rounded-lg bg-primary text-white">
-            Update
-          </span>
-        </DialogTrigger>
-
-        <DialogContent className="flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Update {role}</DialogTitle>
-            <DialogDescription>Update the info of a user.</DialogDescription>
-          </DialogHeader>
-          {isLoading ? (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant='outline' >
+          Edit
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit User Profile</DialogTitle>
+        </DialogHeader>
+        {isUserLoading ? (
+          <div className="h-64">
             <LoadingScreen />
-          ) : (
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-8"
-              >
-                <FormField
-                  control={form.control}
-                  name="phoneNo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone No</FormLabel>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} defaultValue={userData?.data?.name} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} defaultValue={userData?.data?.email} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phoneNo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="01XXXXXXXXX" {...field} defaultValue={userData?.data?.phoneNo} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123 Main St, Dhaka" {...field} defaultValue={userData?.data?.address} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex flex-row justify-start gap-5 items-center">
+
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value||userData?.data?.role} defaultValue={userData?.data?.role}>
                       <FormControl>
-                        <Input placeholder="018XXXXXXXX" {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="nidNo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>NID No</FormLabel>
+                      <SelectContent>
+                        {Object.values(IRole).map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value||userData?.data?.status} defaultValue={userData?.data?.status}>
                       <FormControl>
-                        <Input placeholder="13 or 17 digit nid" {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a status" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      <SelectContent>
+                        {Object.values(IStatus).map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />              </div>
 
-                <div className="flex justify-between items-center gap-2">
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel className="gap-1">Status</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value as string}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.values(IStatus).map((eachStatus) => (
-                              <SelectItem key={eachStatus} value={eachStatus}>
-                                {eachStatus}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel className="gap-1">Role</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value as string}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select Role" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {roleArray.map((eachType) => (
-                              <SelectItem key={eachType} value={eachType}>
-                                {eachType}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="isVerified"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel>Verified</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value === "Yes");
-                          }}
-                          value={field.value ? "Yes" : "No"}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Sort By" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Yes">Yes</SelectItem>
-                            <SelectItem value="No">No</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="flex justify-end items-center gap-3">
-                  <Button type="submit" variant={"default"}>
-                    Apply
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">
+                    Cancel
                   </Button>
-                </div>
-              </form>
-            </Form>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+                </DialogClose>
+                <Button type="submit" disabled={isUpdating}>
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 

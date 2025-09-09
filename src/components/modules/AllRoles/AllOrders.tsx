@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -42,17 +43,20 @@ import {
   IOrderSort,
   IOrderStatus,
   IPaymentMethod,
-  IPaymentStatus
+  IPaymentStatus,
 } from "@/interfaces";
 import { cn } from "@/lib/utils";
 import {
   useAllOrdersQuery,
   useCancelMutation,
+  useUpdateOrderMutation,
+  useSingleOrderQuery,
 } from "@/redux/features/Order/order.api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { useForm as useEditForm } from "react-hook-form";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { useEffect, useState } from "react";
@@ -68,12 +72,23 @@ import { useUserInfoQuery } from "@/redux/features/User/user.api";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+export interface IOrderItem {
+  size: string;
+  quantity: number;
+  productId: {
+    _id: string;
+    name: string;
+    price: number;
+    images: string[];
+  };
+}
+
 export interface IItem {
   _id: string;
   userId?: string;
   name?: string;
   phoneNo: string;
-  // items: IOrderItem[];
+  items: IOrderItem[];
   amountSubtotal: number;
   amountShipping?: number;
   amountTotal: number;
@@ -87,13 +102,9 @@ export interface IItem {
 }
 //need to infer from the web and order model
 
-
 const filterSchema = z
   .object({
-    searchTerm: z
-      .string()
-      .optional()
-      .or(z.literal("")),
+    searchTerm: z.string().optional().or(z.literal("")),
     status: z
       .enum([...Object.values(IOrderStatus)] as [string, ...string[]])
       .optional()
@@ -215,8 +226,8 @@ export default function AllOrders() {
     const toastId = toast.loading("Initiating cancel...");
     try {
       const res = await cancel(orderId).unwrap();
-      console.log('cancelling', res);
-      
+      console.log("cancelling", res);
+
       if (res?.success) {
         toast.success("Cancelled successfully", { id: toastId });
       } else {
@@ -231,11 +242,235 @@ export default function AllOrders() {
     }
   };
 
+  // --- OrderEditDialog Component ---
+  const orderEditSchema = z.object({
+    phoneNo: z.string().min(11, "Phone number required"),
+    name: z.string().min(2, "Name required"),
+    shippingAddress: z.string().min(2, "Address required"),
+    status: z.enum([...Object.values(IOrderStatus)] as [string, ...string[]]),
+    paymentStatus: z.enum([...Object.values(IPaymentStatus)] as [string, ...string[]]),
+  });
+  type OrderEditForm = z.infer<typeof orderEditSchema>;
+
+  function OrderEditDialog({ order }: { order: IItem }) {
+    const [open, setOpen] = useState(false);
+    const [updateOrder, { isLoading: isUpdating }] = useUpdateOrderMutation();
+
+    // Fetch detailed order info when the dialog is opened
+    const { data: singleOrderData, isLoading: isSingleOrderLoading } =
+      useSingleOrderQuery(order._id, {
+        skip: !open,
+        refetchOnMountOrArgChange: true,
+      });
+
+    const form = useEditForm<OrderEditForm>({
+      resolver: zodResolver(orderEditSchema),
+    });
+
+    // Populate form when detailed order data is fetched
+    useEffect(() => {
+      if (singleOrderData?.data) {
+        const detailedOrder = singleOrderData.data;
+        form.reset({
+          phoneNo: detailedOrder.phoneNo || "",
+          name: detailedOrder.name || "",
+          shippingAddress: detailedOrder.shippingAddress || "",
+          status: detailedOrder.status,
+          paymentStatus: detailedOrder.paymentStatus,
+        });
+      }
+    }, [singleOrderData, form]);
+
+    const onSubmit = async (values: OrderEditForm) => {
+      const toastId = toast.loading("Updating order...");
+      try {
+        const res = await updateOrder({
+          orderId: order._id,
+          body: values,
+        }).unwrap();
+        if (res.success) {
+          toast.success("Order updated", { id: toastId });
+          setOpen(false);
+        } else {
+          toast.error("Order not updated.", { id: toastId });
+        }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (e) {
+        toast.error("Failed to update order", { id: toastId });
+      }
+    };
+
+    const orderedItems = singleOrderData?.data?.items || [];
+
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button size="sm" variant="outline">
+            Edit
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Edit Order</DialogTitle>
+            <DialogDescription>Order ID: {order._id}</DialogDescription>
+          </DialogHeader>
+
+          {isSingleOrderLoading ? (
+            <div className="h-96">
+              <LoadingScreen />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left side: Products */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Products Ordered</h3>
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                  {orderedItems.map((item: { productId: { images: (string)[]; name: string ; quantity: string | number ;size:string }}, index: number) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-4 p-2 border rounded-md"
+                    >
+                      <img
+                        src={item.productId?.images[0]}
+                        alt={'pd-img'}
+                        className="w-16 h-16 object-cover rounded-md"
+                      />
+                      <div className="text-sm">
+                        <p className="font-semibold">{item.productId?.name}</p>
+                        <p className="text-muted-foreground">
+                          Size: {item.productId?.size}
+                        </p>
+                        <p className="text-muted-foreground">
+                          Quantity: {item.productId?.quantity}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right side: Form */}
+              <div>
+                <h3 className="font-semibold text-lg mb-4">Order Details</h3>
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phoneNo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="shippingAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Shipping Address</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Order Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={singleOrderData?.data?.status}
+                            value={field.value || singleOrderData?.data?.status}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.values(IOrderStatus).map((status) => (
+                                <SelectItem key={status} value={status}>
+                                  {status}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="paymentStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Payment Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={singleOrderData?.data?.paymentStatus}
+                            value={field.value || singleOrderData?.data?.paymentStatus}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select payment status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.values(IPaymentStatus).map((status) => (
+                                <SelectItem key={status} value={status}>
+                                  {status}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <DialogFooter className="pt-4">
+                      <Button type="submit" disabled={isUpdating}>
+                        {isUpdating ? "Saving..." : "Save Changes"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   // console.log("all orders", data);
   const items: IItem[] = data?.data?.data;
   const totalPage = data?.data?.meta?.totalPage || 1;
   console.log(items);
-  
 
   return (
     <div className="w-full min-w-2xl mx-auto  flex flex-col justify-center items-center">
@@ -277,7 +512,10 @@ export default function AllOrders() {
                             <FormItem>
                               <FormLabel>Search</FormLabel>
                               <FormControl>
-                                <Input placeholder="Name/Phone No/BKASH Transaction ID/Address" {...field} />
+                                <Input
+                                  placeholder="Name/Phone No/BKASH Transaction ID/Address"
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -560,14 +798,14 @@ export default function AllOrders() {
                       <TableHead
                         className={cn(
                           "",
-                          (userData?.data?.role === IRole.ADMIN)
+                          userData?.data?.role === IRole.ADMIN
                             ? ""
                             : "text-right"
                         )}
                       >
                         Date
                       </TableHead>
-                      {(userData?.data?.role === IRole.ADMIN) && (
+                      {userData?.data?.role === IRole.ADMIN && (
                         <TableHead className="text-right">Action</TableHead>
                       )}
                     </TableRow>
@@ -586,15 +824,18 @@ export default function AllOrders() {
                         <TableCell
                           className={cn(
                             "",
-                            (userData?.data?.role === IRole.ADMIN )
+                            userData?.data?.role === IRole.ADMIN
                               ? ""
                               : "text-right"
                           )}
                         >
-                          {item.updatedAt ? new Date(item.updatedAt).toLocaleString() : 'N/A'}
+                          {item.updatedAt
+                            ? new Date(item.updatedAt).toLocaleString()
+                            : "N/A"}
                         </TableCell>
-                        {(userData?.data?.role === IRole.ADMIN) && (
-                          <TableCell className="text-right">
+                        {userData?.data?.role === IRole.ADMIN && (
+                          <TableCell className="text-right flex gap-2 justify-end">
+                            <OrderEditDialog order={item} />
                             <Button
                               variant={"destructive"}
                               onClick={() => handleCancel(item._id)}
@@ -603,9 +844,9 @@ export default function AllOrders() {
                                 item.status === IOrderStatus.REFUNDED
                               }
                             >
-                              {
-                                item.status === IOrderStatus.REFUNDED ? item.status:" Cancel "
-                              }
+                              {item.status === IOrderStatus.REFUNDED
+                                ? item.status
+                                : " Cancel "}
                             </Button>
                           </TableCell>
                         )}

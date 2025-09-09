@@ -32,17 +32,17 @@ const NewArrivals = () => {
               {products.map((product) => (
                 <CarouselItem key={product._id} className="md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                   <div className="p-1 h-full">
-                    <Card className="flex flex-col h-full overflow-hidden">
-                       <CardContent className="p-0">
+                    <Card className="flex flex-col h-full gap-2 overflow-hidden">
+                       <CardContent className="p-0 rounded-md">
                          <img src={product.images[0]} alt={product.name} className="w-full h-72 object-cover transition-transform duration-300 hover:scale-105 rounded-md p-3" />
                        </CardContent>
-                       <div className="p-4 flex flex-col flex-grow">
-                         <h3 className="text-lg font-bold flex-grow">{product.name}</h3>
-                         <p className="text-lg font-semibold mt-2">${product.price}</p>
+                       <div className="p-4 flex flex-col gap-2 flex-grow">
+                         <h3 className="text-md font-bold flex-grow">{product.name}</h3>
+                         <p className="text-sm font-semibold">${product.price}</p>
                        </div>
                        <CardFooter>
                          <Link to={`/product/${product.slug}`} className="w-full">
-                           <Button className="w-full">View Details</Button>
+                           <Button className="w-full rounded-sm" variant={'default'}>View Details</Button>
                          </Link>
                        </CardFooter>
                     </Card>

@@ -21,6 +21,7 @@ export default function DisabledMenu({ role }: { role: string }) {
     logout(undefined);
     dispatch(authApi.util.resetApiState());
     navigate("/", { replace: true });
+    dispatch(authApi.util.resetApiState());
   };
   return (
     <Menubar className=" border-0">

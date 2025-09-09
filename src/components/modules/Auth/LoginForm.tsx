@@ -19,9 +19,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Link, useNavigate } from "react-router";
-import { authApi, useLoginMutation } from "@/redux/features/Auth/auth.api";
+import { useLoginMutation } from "@/redux/features/Auth/auth.api";
 import { toast } from "sonner";
-import { useAppDispatch } from "@/redux/hook";
+// import { useAppDispatch } from "@/redux/hook";
 
 const loginSchema = z.object({
   email: z.email({ error: "Enter a valid Email." }).toLowerCase(),
@@ -33,7 +33,7 @@ const loginSchema = z.object({
 export function LoginForm() {
   const [login] = useLoginMutation();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
+  // const dispatch = useAppDispatch();
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -50,12 +50,13 @@ export function LoginForm() {
     // console.log("showing res",res);
     const toastId = toast.loading("Logging in...");
     try {
-      dispatch(authApi.util.resetApiState());
+      // dispatch(authApi.util.resetApiState());
       const res = await login(formData).unwrap();
       if (res?.success) {
         toast.success("Login successful.", { id: toastId });
 
-        navigate('/profile')
+        navigate('/collections')
+        
 
       } else {
         toast.error(res?.data?.message, { id: toastId });

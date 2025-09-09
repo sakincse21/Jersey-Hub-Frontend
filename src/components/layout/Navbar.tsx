@@ -10,18 +10,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { ModeToggle } from "../ui/mode-toggle";
 import { useUserInfoQuery } from "@/redux/features/User/user.api";
-import { ShoppingBasketIcon } from "lucide-react";
+import { SearchIcon, ShoppingBasketIcon } from "lucide-react";
 import DisabledMenu from "../menubar6";
 import { useAppSelector } from "@/redux/hook";
 import { selectTotalCartItems } from "@/redux/features/Cart/cart.slice";
+import { Input } from "../ui/input";
+import { useState } from "react";
 
 export default function Navbar() {
   const { data } = useUserInfoQuery(undefined);
   const totalCartItems = useAppSelector(selectTotalCartItems);
-
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm]=useState('');
   const navigationLinks = [
     { href: "/", label: "Home" },
     { href: "/collections", label: "Collections" },
@@ -32,7 +35,7 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="px-4 md:px-6 sticky top-0 bg-background py-2 w-full z-50">
+    <header className="px-4 md:px-6 sticky top-0 bg-background backdrop-blur-3xl py-2 w-full z-50">
       <div className="flex h-16 items-center justify-between gap-4 mx-auto">
         {/* Left side */}
         <div className="flex items-center gap-2">
@@ -71,7 +74,7 @@ export default function Navbar() {
                 </svg>
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-36 p-1 md:hidden">
+            <PopoverContent align="start" className="w-36 p-1 xl:hidden">
               <NavigationMenu className="max-w-none *:w-full">
                 <NavigationMenuList className="flex-col items-start gap-0 md:gap-2">
                   {navigationLinks.map((link, index) => (
@@ -94,7 +97,7 @@ export default function Navbar() {
               </div>
             </Link>
             {/* Navigation menu */}
-            <NavigationMenu className="max-lg:hidden">
+            <NavigationMenu className="max-xl:hidden">
               <NavigationMenuList className="gap-4">
                 {navigationLinks.map((link, index) => (
                   <NavigationMenuItem key={index}>
@@ -112,6 +115,10 @@ export default function Navbar() {
         </div>
         {/* Right side */}
         <div className="flex items-center gap-4">
+          <span className="flex flex-row gap-2 justify-end items-center">
+            <Input placeholder="Search Here" onChange={(e)=>{e.preventDefault();setSearchTerm(e.target.value)}} />
+            <SearchIcon onClick={(e)=>{e.preventDefault();navigate(`/collections?searchTerm=${searchTerm}`)}} />
+          </span>
           <Link to={"/cart"} className="relative p-2">
             <ShoppingBasketIcon className="h-6 w-6" />
             {totalCartItems > 0 && (

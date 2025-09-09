@@ -77,6 +77,7 @@ const EditProduct = () => {
   const [deleteImages, setDeleteImages] = useState<string[]>([]);
 
   const product = responseData?.data;
+  
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -337,8 +338,10 @@ const EditProduct = () => {
                           field.onChange(value);
                           setSelectedLeague(value);
                           form.setValue("team", "");
+                          
                         }}
-                        value={field.value}
+                        value={field.value || product?.league}
+                        defaultValue={product?.league}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -369,7 +372,8 @@ const EditProduct = () => {
                       <FormLabel>Team</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        value={field.value}
+                        value={field.value || product?.team}
+                        defaultValue={product?.team}
                         disabled={!selectedLeague}
                       >
                         <FormControl>
@@ -444,7 +448,8 @@ const EditProduct = () => {
                           <FormLabel>Size</FormLabel>
                           <Select
                             onValueChange={field.onChange}
-                            value={field.value}
+                            value={field.value || product.variants[index].size}
+                            defaultValue={product.variants[index].size}
                           >
                             <FormControl>
                               <SelectTrigger>
