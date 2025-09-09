@@ -207,7 +207,7 @@ export default function AllProducts() {
   // console.log(productData);
 
   // console.log("all orders", data);
-  console.log(data);
+  // console.log(data);
 
   const products: IProduct[] = data?.data?.data;
   const totalPage = data?.data?.meta?.totalPage || 1;

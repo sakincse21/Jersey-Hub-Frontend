@@ -168,15 +168,15 @@ const AddProduct = () => {
     formData.append("data", JSON.stringify(productData));
     selectedImages.forEach((image) => formData.append("files", image));
 
-    // Debug log FormData entries in readable way
-    console.log("=== DEBUG: FormData entries ===");
-    for (const [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(key, { name: value.name, size: value.size, type: value.type });
-      } else {
-        console.log(key, value);
-      }
-    }
+    // // Debug log FormData entries in readable way
+    // console.log("=== DEBUG: FormData entries ===");
+    // for (const [key, value] of formData.entries()) {
+    //   if (value instanceof File) {
+    //     console.log(key, { name: value.name, size: value.size, type: value.type });
+    //   } else {
+    //     console.log(key, value);
+    //   }
+    // }
 
     try {
       const res = await createProduct(formData).unwrap();

@@ -27,9 +27,9 @@ export const productApi = baseApi.injectEndpoints({
     }),
     updateProduct: builder.mutation({
       query: (payload) => ({
-        url: `/product/${payload.userId}`,
+        url: `/product/${payload.productId}`,
         method: "PATCH",
-        body: payload.body,
+        body: payload,
         // When using FormData, the browser sets the Content-Type header automatically.
         // Do not set it manually.
       }),

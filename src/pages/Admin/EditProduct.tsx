@@ -90,7 +90,7 @@ const EditProduct = () => {
       price: "",
       isFeatured: false,
       variants: [{ size: "S", stock: "" }],
-      images: [],
+      images: product?.images,
       deleteImages: []
     },
   });
@@ -122,7 +122,6 @@ const EditProduct = () => {
 
   useEffect(() => {
     if (product) {
-      // Set the selected league first to ensure the team dropdown is enabled and populated
       setSelectedLeague(product.league);
 
       form.reset({
@@ -133,11 +132,11 @@ const EditProduct = () => {
         team: product.team,
         price: String(product.price),
         isFeatured: product.isFeatured || false,
-        variants: product.variants.map((v: { size: any; stock: any; }) => ({
+        variants: product?.variants?.map((v: { size: string; stock: number; }) => ({
           size: v.size,
           stock: String(v.stock),
         })),
-        images: product.images || [],
+        images: product?.images,
         deleteImages: [],
       });
     }
@@ -185,28 +184,24 @@ const EditProduct = () => {
   const onSubmit = async (values: ProductFormValues) => {
     const toastId = toast.loading("Updating product....");
 
-    // Correctly determine which images to keep
-    const imagesToKeep = (values.images || []).filter(
-      (img) => !deleteImages.includes(img)
-    );
-
     const productData = {
       ...values,
       price: Number(values.price),
-      variants: values.variants.map((variant) => ({
+      variants: values?.variants?.map((variant) => ({
         size: variant.size,
         stock: Number(variant.stock),
       })),
-      images: imagesToKeep, // Send only the images that are not marked for deletion
+      images: product?.images || [], 
       deleteImages: deleteImages,
     };
 
     const formData = new FormData();
     formData.append("data", JSON.stringify(productData));
+
     selectedImages.forEach((image) => formData.append("files", image));
 
     const payload = {
-      userId: id, // Corrected key from userId to id
+      productId: product?._id,
       body: formData,
     };
 
@@ -448,8 +443,8 @@ const EditProduct = () => {
                           <FormLabel>Size</FormLabel>
                           <Select
                             onValueChange={field.onChange}
-                            value={field.value || product.variants[index].size}
-                            defaultValue={product.variants[index].size}
+                            value={field.value || product?.variants[index]?.size}
+                            defaultValue={product?.variants[index]?.size}
                           >
                             <FormControl>
                               <SelectTrigger>

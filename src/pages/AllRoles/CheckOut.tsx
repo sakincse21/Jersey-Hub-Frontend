@@ -92,7 +92,7 @@ const Checkout = () => {
       ...values, // Includes name, phoneNo, and shippingAddress from the form
     };
 
-    console.log(orderData);
+    // console.log(orderData);
 
     const toastId = toast.loading("Placing your order...");
 
